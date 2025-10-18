@@ -1,19 +1,43 @@
+import React from "react"
+import ReactDOM from "react-dom"
+
+const { useState } = React
 const socket = io('ws://localhost:8080');
 
 socket.on('message', text => {
 
-    const el = document.createElement('li');
-    el.innerHTML = text;
-    document.querySelector('ul').appendChild(el)
+    //const el = document.createElement('li');
+    //el.innerHTML = text;
+    //document.querySelector('ul').appendChild(el)
 
 });
 
-document.querySelector('button').onclick = () => {
+/*document.querySelector('button').onclick = () => {
 
     const text = document.querySelector('input').value;
     socket.emit('message', text)
     
+}*/
+
+function ClassPulse() {
+
+
+    return(
+        <div id="NavBar">
+            <img id = "profileImg"></img>
+            <ul id = "classes">
+                {}
+            </ul>
+        </div>
+        
+        <div id="content">
+            
+
+        </div>
+    )
 }
+
+
 
 // Regular Websockets
 

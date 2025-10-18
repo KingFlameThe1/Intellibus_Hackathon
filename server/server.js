@@ -7,7 +7,7 @@ const io = require('socket.io')(http, {
 io.on('connection', (socket) => {
     console.log('user connected');
 
-    socket.on('message'/*use any event name */, (message) => {
+    socket.on('message'/*can supposedly use any event name */, (message) => {
         console.log('user connected');
 
         io.emit('message', `${socket.id.substr(0,2)} said ${message}`)
