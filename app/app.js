@@ -2,7 +2,7 @@
 //import ReactDOM from "react-dom"
 
 //const { useState } = React
-const socket = io('ws://localhost:8080');
+//const socket = io('ws://localhost:8080');
 
 //socket.on('message', text => {
 
@@ -41,10 +41,11 @@ function navigateTo(page) {
 }
 
 function ClassPulse() {
-    const clList = document.getElementById("classList");
+    //const clList = document.getElementById("classList");
+    //const nav = document.getElementById("NavBar")
     const pageContent = document.getElementById("Content");
 
-    clList.innerHTML = getClasses();
+    //clList.innerHTML = getClasses();
 
     switch (state.currentPage) {
         case "login":
@@ -75,8 +76,25 @@ function ClassPulse() {
 }
 
 //Navigation Bar
-function getClasses() {
+function renderNav(){
 
+  const nav = document.getElementById("NavBar").innerHTML(`
+        <div>
+            <button id="profileBtn">
+                <img id = "profileImg" alt="profile image"></img>
+            </button>
+        </div>
+        
+        <div>
+            <ul id = "classList">
+            </ul>
+        </div>
+  `)
+  document.getElementById(classList).innerHTML(getClasses())
+}
+function getClasses() {
+  //pull classes from server and parse to html
+  return ''
 }
 
 //login page
@@ -106,7 +124,7 @@ function renderLoginPage() {
 function attachLoginPageListeners() {
   const lgInBtn = document.getElementById("log-inBtn").addEventListener("click", () => {
     navigateTo("home");
-    //updateNav();
+    renderNav();
   });
 
 }
