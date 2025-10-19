@@ -3,7 +3,7 @@
 
 //const { useState } = React
 // Import Socket.IO client
-import { io } from "socket.io-client"
+//import { io } from "socket.io-client"
 
 // Utility functions
 function generateClassCode() {
