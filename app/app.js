@@ -3,7 +3,7 @@
 
 //const { useState } = React
 // Import Socket.IO client
-//import { io } from "socket.io-client"
+import { io } from "socket.io-client"
 
 // Utility functions
 function generateClassCode() {
@@ -568,18 +568,31 @@ function attachClassPageListeners() {
   const sendMessageBtn = document.getElementById("sendMessageBtn")
   const messageInput = document.getElementById("messageInput")
 
-  // Connect socket when entering class
   if (!socket || !socket.connected) {
     initializeSocket()
     socket.connect()
-    // Join class room
-    socket.emit("join-class", { classId: state.currentClass?.id, userId: state.currentUser?.id })
   }
 
+  // Join class room for chat
+  socket.emit("join-class-room", {
+    classCode: state.currentClass?.code,
+    userId: state.currentUser?.id,
+  })
+
   if (checkInBtn) {
-    checkInBtn.addEventListener("click", () => {
-      // TODO: API call to check in
-      console.log("[v0] Check-in clicked")
+    checkInBtn.addEventListener("click", async () => {
+      socket.emit("check-in", {
+        email: state.currentUser?.email,
+        classCode: state.currentClass?.code,
+      })
+
+      socket.once("check-in-response", (response) => {
+        if (response.success) {
+          alert("Check-in successful!")
+        } else {
+          alert("Check-in failed: " + response.error)
+        }
+      })
     })
   }
 
@@ -621,13 +634,13 @@ function sendMessage() {
     id: Date.now(),
     text,
     sender: state.currentUser?.id,
-    classId: state.currentClass?.id,
+    senderName: state.currentUser?.name,
+    classCode: state.currentClass?.code,
     timestamp: new Date().toISOString(),
   }
 
-  // Send via socket
   if (socket && socket.connected) {
-    socket.emit("message", message)
+    socket.emit("chat-message", message)
   }
 
   // Add to local state
@@ -647,26 +660,6 @@ function sendMessage() {
       )
       .join("")
     chatMessages.scrollTop = chatMessages.scrollHeight
-  }
-}
-
-function handleIncomingMessage(message) {
-  if (message.sender !== state.currentUser?.id) {
-    state.messages.push(message)
-
-    const chatMessages = document.getElementById("chatMessages")
-    if (chatMessages) {
-      chatMessages.innerHTML = state.messages
-        .map(
-          (msg) => `
-        <div class="message ${msg.sender === state.currentUser?.id ? "sent" : "received"}">
-          <div class="message-bubble">${msg.text}</div>
-        </div>
-      `,
-        )
-        .join("")
-      chatMessages.scrollTop = chatMessages.scrollHeight
-    }
   }
 }
 
@@ -739,6 +732,7 @@ function attachAttendancePageListeners() {
 // Initialize app
 document.addEventListener("DOMContentLoaded", () => {
   initializeSocket()
+  socket.connect()
   render()
 })
 
@@ -746,8 +740,7 @@ document.addEventListener("DOMContentLoaded", () => {
 let socket = null
 
 function initializeSocket() {
-  // TODO: Replace with actual server URL
-  socket = io("http://localhost:3000", {
+  socket = io("http://localhost:8080", {
     autoConnect: false,
   })
 
@@ -755,8 +748,8 @@ function initializeSocket() {
     console.log("[v0] Socket connected:", socket.id)
   })
 
-  socket.on("message", (data) => {
-    console.log("[v0] Received message:", data)
+  socket.on("chat-message", (data) => {
+    console.log("[v0] Received chat message:", data)
     handleIncomingMessage(data)
   })
 
@@ -767,118 +760,107 @@ function initializeSocket() {
 
 // API Placeholder Functions
 async function apiLogin(email, password) {
-  // TODO: Replace with actual API call
   console.log("[v0] API: Login attempt", { email })
-  // Simulated API response
+
   return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        user: {
-          id: "user_" + Date.now(),
-          email: email,
-          name: email.split("@")[0],
-          role: "student", // or 'teacher'
-        },
-      })
-    }, 500)
+    socket.emit("login", { email, password })
+
+    socket.once("login-response", (response) => {
+      resolve(response)
+    })
   })
 }
 
 async function apiSignup(userData) {
-  // TODO: Replace with actual API call
   console.log("[v0] API: Signup attempt", userData)
+
   return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        user: {
-          id: "user_" + Date.now(),
-          ...userData,
-        },
-      })
-    }, 500)
+    socket.emit("signup", userData)
+
+    socket.once("signup-response", (response) => {
+      resolve(response)
+    })
   })
 }
 
 async function apiGetUserClasses(userId) {
-  // TODO: Replace with actual API call
   console.log("[v0] API: Fetching classes for user", userId)
+
   return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        classes: [], // Will be populated from backend
-      })
-    }, 500)
+    socket.emit("get-user-classes", { userId })
+
+    socket.once("user-classes-response", (response) => {
+      resolve(response)
+    })
   })
 }
 
 async function apiJoinClass(classCode, userId) {
-  // TODO: Replace with actual API call
   console.log("[v0] API: Joining class", { classCode, userId })
+
   return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        classData: {
-          id: "class_" + Date.now(),
-          code: classCode,
-          name: "Sample Class",
-          teacher: "Teacher Name",
-        },
-      })
-    }, 500)
+    socket.emit("join-class", { classCode, userId })
+
+    socket.once("join-class-response", (response) => {
+      resolve(response)
+    })
   })
 }
 
 async function apiCreateClass(classData) {
-  // TODO: Replace with actual API call
   console.log("[v0] API: Creating class", classData)
+
   return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        classData: {
-          id: "class_" + Date.now(),
-          code: generateClassCode(),
-          ...classData,
-        },
-      })
-    }, 500)
+    socket.emit("create-class", classData)
+
+    socket.once("create-class-response", (response) => {
+      resolve(response)
+    })
   })
 }
 
 async function apiGetClassDetails(classId) {
-  // TODO: Replace with actual API call
   console.log("[v0] API: Fetching class details", classId)
+
   return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        classData: {
-          id: classId,
-          name: "Sample Class",
-          code: "ABC123",
-          teacher: "Teacher Name",
-          students: [],
-        },
-      })
-    }, 500)
+    socket.emit("get-class-details", { classId })
+
+    socket.once("class-details-response", (response) => {
+      resolve(response)
+    })
   })
 }
 
 async function apiGetAttendance(classId) {
-  // TODO: Replace with actual API call
   console.log("[v0] API: Fetching attendance", classId)
+
   return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        students: [{ name: "John Doe", participationScore: 3 }],
-      })
-    }, 500)
+    socket.emit("get-attendance", { classCode: state.currentClass?.code })
+
+    socket.once("attendance-response", (response) => {
+      resolve(response)
+    })
   })
+}
+
+function handleIncomingMessage(message) {
+  if (message.sender !== state.currentUser?.id) {
+    state.messages.push(message)
+
+    const chatMessages = document.getElementById("chatMessages")
+    if (chatMessages) {
+      chatMessages.innerHTML = state.messages
+        .map(
+          (msg) => `
+        <div class="message ${msg.sender === state.currentUser?.id ? "sent" : "received"}">
+          <div class="message-bubble">${msg.text}</div>
+        </div>
+      `,
+        )
+        .join("")
+      chatMessages.scrollTop = chatMessages.scrollHeight
+    }
+  }
 }
 
 const state = {
