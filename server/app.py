@@ -24,7 +24,6 @@ db = connection.ClassPulse
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
 class UserData(BaseModel):
-    id: PyObjectId | None = Field(default=PyObjectId, alias="_id")
     first_name: str
     last_name: str
     role: str
@@ -67,26 +66,21 @@ async def add_class_data(data: ClassData):
 
 @app.get("/user", response_model=List[UserData])
 async def get_all_users():
-    user_cursor = db["Class_Data"].find()
+    user_cursor = db["User_Data"].find()
     users = await user_cursor.to_list(length=None)
     if not users:
         raise HTTPException(status_code=404, detail="No users found")
     return [UserData(**cls) for cls in users]
-
-@app.get("/user/class/{class_code}", response_model=List[UserData])
-async def get_users_by_class(class_code: str):
-    user_cursor = db["User_Data"].find({"class_code": class_code})
-    users = await user_cursor.to_list(length=None)
-    if not users:
-        raise HTTPException(status_code=404, detail=f"No users found for class code '{class_code}'")
-    return [UserData(**user) for user in users]
 
 @app.post("/user")
 async def add_user_data(data: UserData):
     user_doc = data.model_dump()
     result = await db["User_Data"].insert_one(user_doc)
     datum = await db["User_Data"].find_one({"_id": result.inserted_id})
-    return UserData(**datum)
+    if not datum:
+        raise HTTPException(status_code=404, detail="User not found after insertion")
+    datum["_id"] = str(datum["_id"])
+    return datum
 
 @app.post("/check_in")
 async def check_in_time(data: Check_in):
