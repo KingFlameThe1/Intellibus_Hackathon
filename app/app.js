@@ -104,6 +104,10 @@ function renderLoginPage() {
 
 //login page
 function attachLoginPageListeners() {
+  const lgInBtn = document.getElementById("log-inBtn").addEventListener("click", () => {
+    navigateTo("home");
+    //updateNav();
+  });
 
 }
 
