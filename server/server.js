@@ -12,28 +12,42 @@ io.on("connection", (socket) => {
 
   socket.on("login", async (data) => {
     try {
-      // TODO: Add authentication endpoint to app.py
-      // For now, we'll validate user exists in database
-      const response = await axios.get(`${PYTHON_API_URL}/user`, {
-        params: { email: data.email },
-      })
+      // Get all users and find matching email
+      const response = await axios.get(`${PYTHON_API_URL}/user`)
+      const users = response.data
 
-      socket.emit("login-response", {
-        success: true,
-        user: response.data,
-      })
+      // Find user with matching email and password
+      const user = users.find((u) => u.email === data.email && u.password === data.password)
+
+      if (user) {
+        socket.emit("login-response", {
+          success: true,
+          user: {
+            id: user._id || user.id,
+            email: user.email,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            name: `${user.first_name} ${user.last_name}`,
+            role: user.role,
+          },
+        })
+      } else {
+        socket.emit("login-response", {
+          success: false,
+          error: "Invalid credentials",
+        })
+      }
     } catch (error) {
       console.error("Login error:", error.message)
       socket.emit("login-response", {
         success: false,
-        error: "Invalid credentials",
+        error: "Login failed",
       })
     }
   })
 
   socket.on("signup", async (data) => {
     try {
-      // TODO: Add user creation endpoint to app.py
       const response = await axios.post(`${PYTHON_API_URL}/user`, {
         first_name: data.firstName,
         last_name: data.lastName,
@@ -42,9 +56,17 @@ io.on("connection", (socket) => {
         role: data.role,
       })
 
+      const user = response.data
       socket.emit("signup-response", {
         success: true,
-        user: response.data,
+        user: {
+          id: user._id || user.id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+          name: `${user.first_name} ${user.last_name}`,
+          role: user.role,
+        },
       })
     } catch (error) {
       console.error("Signup error:", error.message)
@@ -57,36 +79,44 @@ io.on("connection", (socket) => {
 
   socket.on("get-user-classes", async (data) => {
     try {
-      // TODO: Add endpoint to get user's classes from app.py
-      const response = await axios.get(`${PYTHON_API_URL}/user-classes`, {
-        params: { user_id: data.userId },
-      })
+      // Get all classes (in future, filter by user)
+      const response = await axios.get(`${PYTHON_API_URL}/class`)
+      const classes = response.data.map((cls) => ({
+        id: cls.class_code,
+        code: cls.class_code,
+        name: cls.class_name,
+        teacher: cls.teacher_name,
+      }))
 
       socket.emit("user-classes-response", {
         success: true,
-        classes: response.data,
+        classes: classes,
       })
     } catch (error) {
       console.error("Get classes error:", error.message)
       socket.emit("user-classes-response", {
         success: true,
-        classes: [], // Return empty array if error
+        classes: [],
       })
     }
   })
 
   socket.on("join-class", async (data) => {
     try {
-      const response = await axios.get(`${PYTHON_API_URL}/class`, {
-        params: { class_code: data.classCode },
-      })
+      const response = await axios.get(`${PYTHON_API_URL}/class/${data.classCode}`)
+      const classData = response.data[0] // API returns array with single item
 
       // Join socket room for this class
       socket.join(`class_${data.classCode}`)
 
       socket.emit("join-class-response", {
         success: true,
-        classData: response.data,
+        classData: {
+          id: classData.class_code,
+          code: classData.class_code,
+          name: classData.class_name,
+          teacher: classData.teacher_name,
+        },
       })
     } catch (error) {
       console.error("Join class error:", error.message)
@@ -105,9 +135,15 @@ io.on("connection", (socket) => {
         teacher_name: data.teacherName,
       })
 
+      const classData = response.data
       socket.emit("create-class-response", {
         success: true,
-        classData: response.data,
+        classData: {
+          id: classData.class_code,
+          code: classData.class_code,
+          name: classData.class_name,
+          teacher: classData.teacher_name,
+        },
       })
     } catch (error) {
       console.error("Create class error:", error.message)
@@ -127,13 +163,14 @@ io.on("connection", (socket) => {
 
       socket.emit("check-in-response", {
         success: true,
-        data: response.data,
+        message: response.data.message,
+        data: response.data.data,
       })
     } catch (error) {
-      console.error("Check-in error:", error.message)
+      console.error("Check-in error:", error.response?.data || error.message)
       socket.emit("check-in-response", {
         success: false,
-        error: "Check-in failed",
+        error: error.response?.data?.detail || "Check-in failed",
       })
     }
   })
@@ -163,20 +200,22 @@ io.on("connection", (socket) => {
 
   socket.on("get-attendance", async (data) => {
     try {
-      // TODO: Add endpoint to get attendance from app.py
-      const response = await axios.get(`${PYTHON_API_URL}/attendance`, {
-        params: { class_code: data.classCode },
-      })
+      const response = await axios.get(`${PYTHON_API_URL}/user/class/${data.classCode}`)
+      const users = response.data.map((user) => ({
+        name: `${user.first_name} ${user.last_name}`,
+        email: user.email,
+        participationScore: 0, // TODO: Add participation tracking
+      }))
 
       socket.emit("attendance-response", {
         success: true,
-        students: response.data,
+        students: users,
       })
     } catch (error) {
       console.error("Get attendance error:", error.message)
       socket.emit("attendance-response", {
         success: true,
-        students: [], // Return empty array if error
+        students: [],
       })
     }
   })
