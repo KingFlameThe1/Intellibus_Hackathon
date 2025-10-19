@@ -23,11 +23,12 @@ io.on("connection", (socket) => {
         socket.emit("login-response", {
           success: true,
           user: {
-            id: user._id || user.id,
+            //id: user._id || user.id,
             email: user.email,
             firstName: user.first_name,
             lastName: user.last_name,
-            name: `${user.first_name} ${user.last_name}`,
+            //name: `${user.first_name} ${user.last_name}`,
+            password: user.password,
             role: user.role,
           },
         })
@@ -60,11 +61,12 @@ io.on("connection", (socket) => {
       socket.emit("signup-response", {
         success: true,
         user: {
-          id: user._id || user.id,
+          //id: user._id || user.id,
           email: user.email,
           firstName: user.first_name,
           lastName: user.last_name,
-          name: `${user.first_name} ${user.last_name}`,
+          //name: `${user.first_name} ${user.last_name}`,
+          password: user.password,
           role: user.role,
         },
       })
@@ -82,7 +84,7 @@ io.on("connection", (socket) => {
       // Get all classes (in future, filter by user)
       const response = await axios.get(`${PYTHON_API_URL}/class`)
       const classes = response.data.map((cls) => ({
-        id: cls.class_code,
+        //id: cls.class_code,
         code: cls.class_code,
         name: cls.class_name,
         teacher: cls.teacher_name,
@@ -112,7 +114,7 @@ io.on("connection", (socket) => {
       socket.emit("join-class-response", {
         success: true,
         classData: {
-          id: classData.class_code,
+          //id: classData.class_code,
           code: classData.class_code,
           name: classData.class_name,
           teacher: classData.teacher_name,
@@ -139,7 +141,7 @@ io.on("connection", (socket) => {
       socket.emit("create-class-response", {
         success: true,
         classData: {
-          id: classData.class_code,
+          //id: classData.class_code,
           code: classData.class_code,
           name: classData.class_name,
           teacher: classData.teacher_name,
@@ -180,7 +182,7 @@ io.on("connection", (socket) => {
 
     // Broadcast message to all users in the class room
     io.to(`class_${data.classCode}`).emit("chat-message", {
-      id: data.id,
+      //id: data.id,
       text: data.text,
       sender: data.sender,
       senderName: data.senderName,
