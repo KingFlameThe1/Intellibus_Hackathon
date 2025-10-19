@@ -47,7 +47,7 @@ class Check_in(BaseModel):
 # Routes
 @app.get("/class", response_model=ClassData)
 async def get_class(class_code: Optional[str] = Query(..., description="Enter class code")):
-    result = await db["Class_Data"].find_one({"code": class_code})
+    result = await db["Class_Data"].find_one({"class_code": class_code})
     if not result:
         raise HTTPException(status_code=404, detail=f"Class code '{class_code}' not found")
     return ClassData(**result)
