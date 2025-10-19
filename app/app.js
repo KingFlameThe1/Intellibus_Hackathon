@@ -350,7 +350,7 @@ function attachSignupPageListeners() {
       firstName,
       lastName,
       email,
-      name: `${firstName} ${lastName}`,
+      password,
     }
 
     const response = await apiSignup(userData)
